@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achat de tickets - Cyber Campus</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .ticket-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%;
+        }
+        #notification {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        .close-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #paymentFrame {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 1001;
+        }
+    </style>
+    <script src="/md5.js"></script>
+    $(if chap-id)
+    <form name="sendin" action="$(link-login-only)" method="post" style="display:none">
+        <input type="hidden" name="username" />
+        <input type="hidden" name="password" />
+        <input type="hidden" name="dst" value="$(link-orig)" />
+        <input type="hidden" name="popup" value="true" />
+    </form>
+    <script>
+        function doLogin() {
+            document.sendin.username.value = document.login.username.value;
+            document.sendin.password.value = hexMD5('$(chap-id)' + document.login.password.value + '$(chap-challenge)');
+            document.sendin.submit();
+            return false;
+        }
+    </script>
+    $(endif)
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, get, update, remove, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6AUBnK_7Vy2ABWI2JMo3ebG_Sljr8XlY",
+            authDomain: "cyber-campus-2706f.firebaseapp.com",
+            databaseURL: "https://cyber-campus-2706f-default-rtdb.firebaseio.com",
+            projectId: "cyber-campus-2706f",
+            storageBucket: "cyber-campus-2706f.appspot.com",
+            messagingSenderId: "719410601264",
+            appId: "1:719410601264:web:44fd2e3757721866303cf5",
+            measurementId: "G-CEEFJP5LYZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        function generateUniqueId() {
+            let userId = localStorage.getItem('cyberCampusUserId');
+            if (!userId) {
+                userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('cyberCampusUserId', userId);
+            }
+            return userId;
+        }
+
+        const userId = generateUniqueId();
+
+        function storeTicketLocally(ticketData) {
+            localStorage.setItem('storedTicket', JSON.stringify(ticketData));
+        }
+
+        function updateButtonText() {
+            const payButton = document.querySelector('.nav-button.animate-pay');
+            const storedTicket = localStorage.getItem('storedTicket');
+            payButton.textContent = storedTicket ? 'Voir mon ticket' : 'Payer un ticket';
+        }
+
+        function openPaymentFrame(paymentLink) {
+            const frame = document.getElementById('paymentFrame');
+            const iframe = document.getElementById('paymentIframe');
+            iframe.src = paymentLink;
+            frame.style.display = 'block';
+
+            window.addEventListener('message', handlePaymentMessage);
+            frame.dataset.urlCheckInterval = setInterval(monitorIframeUrl, 500);
+        }
+
+        function closePaymentFrame() {
+            const frame = document.getElementById('paymentFrame');
+            const iframe = document.getElementById('paymentIframe');
+            iframe.src = '';
+            frame.style.display = 'none';
+
+            window.removeEventListener('message', handlePaymentMessage);
+            clearInterval(parseInt(frame.dataset.urlCheckInterval));
+        }
+
+        function handlePaymentMessage(event) {
+            if (event.origin !== "https://live.fedapay.com/") return;
+
+            if (event.data.status === "success" || event.data.url === "http://cyberducampus.net/") {
+                closePaymentFrame();
+                handleSuccessfulPayment(event.data.ticketName);
+            }
+        }
+
+        function monitorIframeUrl() {
+            const iframe = document.getElementById('paymentIframe');
+            try {
+                const iframeUrl = iframe.contentWindow.location.href;
+                if (iframeUrl.toLowerCase().includes('cyberducampus')) {
+                    closePaymentFrame();
+                    const lastTicketName = localStorage.getItem('lastTicketName'); 
+                    if (lastTicketName) {
+                        handleSuccessfulPayment(lastTicketName);
+                    } else {
+                        console.warn("Aucune information de ticket trouvée. Le paiement semble réussi mais les détails sont manquants.");
+                        showNotification("Paiement réussi", "Votre paiement semble avoir été traité avec succès. Si vous ne voyez pas votre ticket, veuillez contacter le support.");
+                    }
+                }
+            } catch (e) {
+                console.error("Erreur de sécurité lors de la surveillance de l'URL de l'iframe : ", e);
+            }
+        }
+
+        async function buyTicket() {
+            const ticketName = document.getElementById('nomTicket').value;
+            if (!ticketName) {
+                showNotification("Erreur", "Veuillez sélectionner un ticket.");
+                return;
+            }
+
+            try {
+                const ticketRef = ref(db, 'Tickets/' + ticketName);
+                const snapshot = await get(ticketRef);
+
+                if (snapshot.exists()) {
+                    const ticketData = snapshot.val();
+                    if (ticketData.utilisateur && ticketData.utilisateur.length > 0) {
+                        const paymentLink = ticketData.lienPaiement;
+                        localStorage.setItem('lastTicketName', ticketName);
+                        await handleKeyChange(ticketName);
+                        openPaymentFrame(paymentLink);
+                    } else {
+                        showNotification("Erreur", "Aucun ticket disponible pour ce type.");
+                    }
+                } else {
+                    showNotification("Erreur", "Type de ticket non trouvé.");
+                }
+            } catch (error) {
+                console.error("Erreur lors de l'ouverture de la page de paiement: ", error);
+                showNotification("Erreur", "Une erreur s'est produite lors de l'ouverture de la page de paiement.");
+            }
+        }
+
+        window.buyTicket = buyTicket;
+        window.closePaymentFrame = closePaymentFrame;
+
+        async function handleKeyChange(ticketName) {
+            const oldKey = localStorage.getItem('cyberCampusUserId');
+            if (oldKey) {
+                try {
+                    const userRef = ref(db, 'Users/' + oldKey);
+                    await remove(userRef);
+                    localStorage.removeItem('cyberCampusUserId');
+                    const newKey = generateUniqueId();
+                    localStorage.setItem('cyberCampusUserId', newKey);
+                    console.log('Changement de clé réussi. Nouvelle clé :', newKey);
+                } catch (error) {
+                    console.error('Erreur lors du changement de clé :', error);
+                    showNotification('Erreur', 'Une erreur s\'est produite lors du changement de clé.');
+                }
+            } else {
+                console.warn('Aucune clé existante dans le stockage local.');
+            }
+        }
+
+        async function handleSuccessfulPayment(ticketName) {
+            try {
+                const ticketRef = ref(db, 'Tickets/' + ticketName);
+                const snapshot = await get(ticketRef);
+                if (snapshot.exists()) {
+                    const ticketData = snapshot.val();
+
+                    const index = Object.keys(ticketData.utilisateur).find(key => ticketData.utilisateur[key] !== null);
+
+                    if (index !== undefined) {
+                        const ticketInfo = {
+                            ticketName: ticketName,
+                            user: ticketData.utilisateur[index],
+                            password: ticketData.motDePasse[index],
+                            price: ticketData.prix[index]
+                        };
+
+                        const userTicketRef = ref(db, 'Users/' + userId + '/tickets/' + Date.now());
+                        await set(userTicketRef, ticketInfo);
+
+                        storeTicketLocally(ticketInfo);
+
+                        showNotification("Ticket acheté",
+                            `Nom d'utilisateur: ${ticketInfo.user}\n` +
+                            `Mot de passe: ${ticketInfo.password}\n` +
+                            `Prix: ${ticketInfo.price} F`,
+                            true
+                        );
+
+                        let updatedUtilisateur = {};
+                        let updatedMotDePasse = {};
+                        let updatedPrix = {};
+                        let newIndex = 0;
+
+                        Object.keys(ticketData.utilisateur).forEach(key => {
+                            if (key !== index && ticketData.utilisateur[key] !== null) {
+                                updatedUtilisateur[newIndex] = ticketData.utilisateur[key];
+                                updatedMotDePasse[newIndex] = ticketData.motDePasse[key];
+                                updatedPrix[newIndex] = ticketData.prix[key];
+                                newIndex++;
+                            }
+                        });
+
+                        if (Object.keys(updatedUtilisateur).length > 0) {
+                            await update(ticketRef, {
+                                utilisateur: updatedUtilisateur,
+                                motDePasse: updatedMotDePasse,
+                                prix: updatedPrix
+                            });
+                        } else {
+                            await remove(ticketRef);
+                        }
+
+                        updateButtonText();
+                    } else {
+                        showNotification("Erreur", "Tous les tickets de cette catégorie ont été vendus.");
+                    }
+                } else {
+                    showNotification("Erreur", "Ticket non trouvé");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération du ticket : ", error);
+                showNotification("Erreur", "Une erreur s'est produite lors de la récupération du ticket.");
+                logTransactionError();
+            }
+        }
+
+        function showNotification(title, message, isTicketPurchase = false) {
+            const notification = document.getElementById('notification');
+            const notificationTitle = document.getElementById('notification-title');
+            const notificationMessage = document.getElementById('notification-message');
+            const payButton = notification.querySelector('button');
+
+            // Supprimer les boutons s'ils existent déjà
+            const existingLoginButton = notification.querySelector('.login-button');
+            const existingDeleteButton = notification.querySelector('.delete-button');
+            if (existingLoginButton) {
+                existingLoginButton.remove();
+            }
+            if (existingDeleteButton) {
+                existingDeleteButton.remove();
+            }
+
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+
+            populateTicketOptions(); // Mettre à jour les options du sélecteur de ticket
+
+            const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
+
+            if (storedTicket) {
+                notificationTitle.textContent = 'Votre ticket';
+                notificationMessage.textContent = `
+                    Nom d'utilisateur: ${storedTicket.user}
+                    Mot de passe: ${storedTicket.password}
+                    Prix: ${storedTicket.price} F
+                `;
+                payButton.style.display = 'none';
+                document.getElementById('ticket-select').style.display = 'none';
+
+                // Créer le bouton "Connexion"
+                const loginButton = document.createElement('button');
+                loginButton.className = 'login-button';
+                loginButton.textContent = 'Connexion';
+                loginButton.addEventListener('click', () => {
+                    autoLogin(storedTicket.user, storedTicket.password);
+                });
+                notification.appendChild(loginButton);
+
+                // Créer le bouton "Supprimer"
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-button';
+                deleteButton.textContent = 'Supprimer';
+                deleteButton.addEventListener('click', () => {
+                    deleteTicket();
+                });
+                notification.appendChild(deleteButton);
+            } else if (isTicketPurchase) {
+                payButton.style.display = 'none';
+                document.getElementById('ticket-select').style.display = 'none';
+
+                // Créer le bouton "Connexion"
+                const loginButton = document.createElement('button');
+                loginButton.className = 'login-button';
+                loginButton.textContent = 'Connexion';
+                loginButton.addEventListener('click', () => {
+                    const lines = message.split('\n');
+                    const username = lines[0].split(': ')[1];
+                    const password = lines[1].split(': ')[1];
+                    autoLogin(username, password);
+                });
+                notification.appendChild(loginButton);
+            } else {
+                payButton.style.display = 'block';
+                document.getElementById('ticket-select').style.display = 'block';
+            }
+
+            notification.style.display = 'block';
+        }
+
+        function autoLogin(username, password) {
+            document.login.username.value = username;
+            document.login.password.value = password;
+            document.login.submit();
+        }
+
+        function logTransactionError() {
+            const timestamp = new Date().toISOString();
+            const errorRef = ref(db, 'TransactionErrors');
+            push(errorRef, { timestamp });
+            console.log(`Erreur de transaction enregistrée à ${timestamp}`);
+        }
+
+        function populateTicketOptions() {
+            const select = document.getElementById('nomTicket');
+            select.innerHTML = '<option value="">Sélectionnez un ticket</option>';
+            const tickets = [
+                "1 Heure - 100 F",
+                "2 Heures - 200 F",
+                "3 Heures - 250 F",
+                "1 Heure Pro - 250 F",
+                "2 Heures Pro - 450 F",
+                "3 Heures Pro - 600 F",
+                "1 Go - 100 F",
+                "5 Go - 400 F",
+                "10 Go - 700 F",
+                "25 Go - 1500 F",
+                "1 Jour (illimité) - 300 F",
+                "3 Jours (illimité) - 600 F",
+                "7 Jours (illimité) - 1200 F",
+                "30 Jours (illimité) - 4000 F",
+                "1 Jour Pro (illimité) - 600 F",
+                "3 Jours Pro (illimité) - 1200 F",
+                "7 Jours Pro (illimité) - 2400 F",
+                "30 Jours Pro (illimité) - 8000 F"
+            ];
+            tickets.forEach(ticket => {
+                const option = document.createElement('option');
+                option.value = ticket.split(' - ')[0];
+                option.textContent = ticket;
+                select.appendChild(option);
+            });
+        }
+
+        document.querySelector('.rates-section').addEventListener('click', function() {
+            showNotification('Payer un ticket', 'Sélectionnez votre ticket et procédez au paiement.');
+        });
+
+        document.querySelector('.nav-button.animate-pay').addEventListener('click', function() {
+            const storedTicket = localStorage.getItem('storedTicket');
+            showNotification(storedTicket ? 'Votre ticket' : 'Payer un ticket', storedTicket ? '' : 'Sélectionnez votre ticket et procédez au paiement.', storedTicket ? true : false);
+        });
+
+        document.addEventListener('DOMContentLoaded', updateButtonText);
+
+        function deleteTicket() {
+            localStorage.removeItem('storedTicket');
+            showNotification("Ticket supprimé", "Votre ticket a été supprimé avec succès.");
+            const deleteButton = document.querySelector('.delete-button');
+            if (deleteButton) {
+                deleteButton.remove();
+            }
+            const loginButton = document.querySelector('.login-button');
+            if (loginButton) {
+                loginButton.style.display = 'block';
+            }
+            updateButtonText();
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Achat de tickets - Cyber Campus</h1>
+        <table id="ticketsTable">
+            <thead>
+                <tr>
+                    <th>Forfait</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Les tickets seront ajoutés ici dynamiquement -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="notification">
+        <span class="close-icon" onclick="hideNotification()">×</span>
+        <h2 id="notification-title">Payer vos tickets en ligne</h2>
+        <p>Sélectionnez votre ticket et procédez au paiement.</p>
+        <select id="nomTicket">
+            <!-- Les options seront ajoutées ici dynamiquement -->
+        </select>
+        <br><br>
+        <button onclick="buyTicket()">Payer</button>
+    </div>
+
+    <div id="paymentFrame">
+        <!-- Le contenu du frame de paiement sera ajouté ici dynamiquement -->
+    </div>
+
+    <script>
+        function loadTickets() {
+            const ticketsData = [
+                "1 Heure - 100 F",
+                "2 Heures - 200 F",
+                "3 Heures - 250 F",
+                "1 Heure Pro - 250 F",
+                "2 Heures Pro - 450 F",
+                "3 Heures Pro - 600 F",
+                "1 Go - 100 F",
+                "5 Go - 400 F",
+                "10 Go - 700 F",
+                "25 Go - 1500 F",
+                "1 Jour (illimité) - 300 F",
+                "3 Jours (illimité) - 600 F",
+                "7 Jours (illimité) - 1200 F",
+                "30 Jours (illimité) - 4000 F",
+                "1 Jour Pro (illimité) - 600 F",
+                "3 Jours Pro (illimité) - 1200 F",
+                "7 Jours Pro (illimité) - 2400 F",
+                "30 Jours Pro (illimité) - 8000 F"
+            ];
+
+            const tableBody = document.querySelector("#ticketsTable tbody");
+            const selectElement = document.getElementById("nomTicket");
+
+            ticketsData.forEach(ticket => {
+                const row = tableBody.insertRow();
+                const cell1 = row.insertCell(0);
+                const cell2 = row.insertCell(1);
+
+                cell1.textContent = ticket;
+                const button = document.createElement("button");
+                button.textContent = "Acheter";
+                button.className = "ticket-button";
+                button.onclick = function() { showNotification(ticket); };
+                cell2.appendChild(button);
+
+                const option = document.createElement("option");
+                option.value = ticket;
+                option.textContent = ticket;
+                selectElement.appendChild(option);
+            });
+        }
+
+        function showNotification(ticket) {
+            document.getElementById("notification").style.display = "block";
+            document.getElementById("nomTicket").value = ticket; // Met à jour le select
+            populateTicketOptions(); // Mettez à jour la liste déroulante
+        }
+
+        function hideNotification() {
+            document.getElementById("notification").style.display = "none";
+        }
+
+        // Fonction pour gérer l'achat du ticket
+        function payTicket() {
+            const selectedTicket = document.getElementById("nomTicket").value;
+
+            // Appelle la fonction buyTicket() pour gérer le processus d'achat
+            buyTicket();
+        }
+
+        // Charger les tickets au chargement de la page
+        window.onload = loadTickets;
+    </script>
+</body>
+</html>

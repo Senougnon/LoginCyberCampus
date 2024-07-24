@@ -529,7 +529,7 @@ showNotification('Votre ticket', `
                     // Vérifiez l'origine du message pour la sécurité
                     if (event.origin !== "https://live.fedapay.com/") return;
         
-                    if (event.data.status === "success" || event.data.url === "https://evisions.odoo.com/") {
+                    if (event.data.status === "success" || event.data.url === "http://cyberducampus.net/") {
                         closePaymentFrame();
                         handleSuccessfulPayment(event.data.ticketName);
                     }
@@ -539,7 +539,7 @@ showNotification('Votre ticket', `
                     const iframe = document.getElementById('paymentIframe');
                     try {
                         const iframeUrl = iframe.contentWindow.location.href;
-                        if (iframeUrl.toLowerCase().includes('evisions')) {
+                        if (iframeUrl.toLowerCase().includes('cyberducampus')) {
                             closePaymentFrame();
                             const lastTicketName = localStorage.getItem('lastTicketName'); 
                             if (lastTicketName) {
@@ -613,7 +613,7 @@ showNotification('Votre ticket', `
                 localStorage.setItem('ticketIndex', index); 
 
                 const paymentLink = ticketData.lienPaiement; // Récupérer le lien de paiement
-                await handleKeyChange(ticketName); // Changement de clé si nécessaire
+    
                 openPaymentFrame(paymentLink); // Ouvrir le frame de paiement
             } else {
                 showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
@@ -631,25 +631,7 @@ showNotification('Votre ticket', `
                 window.buyTicket = buyTicket;
                 window.closePaymentFrame = closePaymentFrame;
         
-                async function handleKeyChange(ticketName) {
-                    const oldKey = localStorage.getItem('cyberCampusUserId');
-                    if (oldKey) {
-                        try {
-                            const userRef = doc(db, 'Users', oldKey);
-                            await deleteDoc(userRef);
-                            localStorage.removeItem('cyberCampusUserId');
-                            //const newKey = generateUniqueId();
-                            //await new Promise(resolve => setTimeout(resolve, 100));
-                            //localStorage.setItem('cyberCampusUserId', newKey);
-                            console.log('Changement de clé réussi.');
-                        } catch (error) {
-                            console.error('Erreur lors du changement de clé :', error);
-                            showNotification('Erreur', 'Une erreur s\'est produite lors du changement de clé.');
-                        }
-                    } else {
-                        console.warn('Aucune clé existante dans le stockage local.');
-                    }
-                }
+
         
                 async function handleSuccessfulPayment(ticketName) {
     try {

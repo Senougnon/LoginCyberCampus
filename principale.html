@@ -604,6 +604,22 @@ function openPaymentFrame(paymentLink) {
     frame.dataset.urlCheckInterval = urlCheckInterval;
 }
 
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'buyTicket') {
+        const ticketName = event.data.ticketName;
+        const price = event.data.price;
+        // Déclenchez le processus de paiement avec ticketName et price
+        buyTicket(ticketName);
+    } else if (event.data.type === 'ticketPurchased') {
+        // Gérer les messages de type 'ticketPurchased'
+        const ticketData = event.data.ticketData;
+        showNotification('Votre ticket', 
+            `Nom d'utilisateur: ${ticketData.user}\n` +
+            `Mot de passe: ${ticketData.password}\n` +
+            `Prix: ${ticketData.price} F`
+        );
+    }
+});
         function closePaymentFrame() {
             const frame = document.getElementById('paymentFrame');
             const iframe = document.getElementById('paymentIframe');
@@ -984,7 +1000,7 @@ document.forms['login'].addEventListener('submit', handleLogin);
             <h2>Tarifs</h2>
             <iframe src="https://wifipay.netlify.app/" width="100%" height="500px" frameborder="0"></iframe>
         </section>
-        
+
         <section class="locations-section">
             <h2>Nos sites de connexion</h2>
             <ul>

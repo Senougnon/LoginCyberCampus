@@ -288,12 +288,356 @@ footer {
             text-align: left;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
-    </style>
-    <script>
-        // Fonction pour envoyer un message à la page principale
-        function buyTicket(ticketName) {
-            window.parent.postMessage({ type: 'buyTicket', ticketName: ticketName }, '*');
+
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            color: #1a2a6c;
+            text-align: center;
         }
+
+        .notification h2 {
+            color: #1a2a6c;
+            margin-bottom: 20px;
+        }
+
+        .notification p {
+            margin-bottom: 15px;
+        }
+
+        .close-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        #paymentFrame {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(246, 255, 123, 0.404);
+            z-index: 1000;
+        }
+
+        #paymentFrame > div {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            margin: 0% auto;
+            background-color: rgb(253, 255, 223);
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #paymentIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #closePaymentFrame {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1001;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #1a2a6c;
+        }
+
+        #paymentFrame .loading-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none; /* Masquer l'icône par défaut */
+        }
+
+        #paymentFrame .loading-icon img {
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, get, remove, set, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6AUBnK_7Vy2ABWI2JMo3ebG_Sljr8XlY",
+            authDomain: "cyber-campus-2706f.firebaseapp.com",
+            databaseURL: "https://cyber-campus-2706f-default-rtdb.firebaseio.com",
+            projectId: "cyber-campus-2706f",
+            storageBucket: "cyber-campus-2706f.appspot.com",
+            messagingSenderId: "719410601264",
+            appId: "1:719410601264:web:44fd2e3757721866303cf5",
+            measurementId: "G-CEEFJP5LYZ"
+        };
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let localTickets = {};
+
+        // Fonction pour synchroniser les données
+        async function syncTickets() {
+            try {
+                const response = await fetch('Tickets.json');
+                const ticketsFromJSON = await response.json();
+                const ticketsVendusRef = ref(db, 'TicketsVendus');
+                const snapshot = await get(ticketsVendusRef);
+                const ticketsVendus = snapshot.val() || {};
+
+                localTickets = JSON.parse(JSON.stringify(ticketsFromJSON));
+
+                for (const ticketId in ticketsVendus) {
+                    const ticketVendu = ticketsVendus[ticketId];
+                    const ticketName = Object.keys(localTickets).find(
+                        (key) => localTickets[key].utilisateur.includes(ticketVendu.user)
+                    );
+
+                    if (ticketName) {
+                        const ticketIndex = localTickets[ticketName].utilisateur.indexOf(ticketVendu.user);
+
+                        if (ticketIndex > -1) {
+                            localTickets[ticketName].utilisateur.splice(ticketIndex, 1);
+                            localTickets[ticketName].motDePasse.splice(ticketIndex, 1);
+                            localTickets[ticketName].prix.splice(ticketIndex, 1);
+
+                            if (localTickets[ticketName].utilisateur.length === 0) {
+                                delete localTickets[ticketName];
+                            }
+                        }
+                    }
+                }
+
+                console.log("Données synchronisées:", localTickets);
+            } catch (error) {
+                console.error("Erreur lors de la synchronisation des tickets:", error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            syncTickets();
+            setInterval(syncTickets, 5000);
+        });
+
+        async function buyTicket(ticketName) {
+            if (!ticketName) {
+                showNotification("Echec de chargement", "Oups! cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/");
+                return;
+            }
+
+            try {
+                if (localTickets[ticketName]) {
+                    const ticketData = localTickets[ticketName];
+                    const ticketDisponible = ticketData.utilisateur.length > 0;
+
+                    if (ticketDisponible) {
+                        const index = 0;
+
+                        const achatEnCoursRef = ref(db, 'AchatEnCours');
+                        const newTicketRef = push(achatEnCoursRef);
+                        await set(newTicketRef, {
+                            user: ticketData.utilisateur[index],
+                            password: ticketData.motDePasse[index],
+                            price: ticketData.prix[index]
+                        });
+
+                        localStorage.setItem('lastTicketName', ticketName);
+                        localStorage.setItem('ticketIndex', index);
+
+                        const paymentLink = ticketData.lienPaiement;
+
+                        openPaymentFrame(paymentLink);
+                    } else {
+                        showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
+                    }
+                } else {
+                    showNotification("Erreur", "Ticket non trouvé");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération du ticket : ", error);
+                showNotification("Erreur", "Une erreur s'est produite lors de la récupération du ticket.");
+                logTransactionError();
+            }
+        }
+
+        function openPaymentFrame(paymentLink) {
+            const frame = document.getElementById('paymentFrame');
+            const iframe = document.getElementById('paymentIframe');
+            iframe.src = paymentLink;
+            frame.style.display = 'block';
+
+            const loadingIcon = document.querySelector('#paymentFrame .loading-icon');
+            loadingIcon.style.display = 'block';
+
+            iframe.onload = () => {
+                loadingIcon.style.display = 'none';
+            };
+
+            window.addEventListener('message', handlePaymentMessage);
+            const urlCheckInterval = setInterval(monitorIframeUrl, 500);
+            frame.dataset.urlCheckInterval = urlCheckInterval;
+        }
+
+        function closePaymentFrame() {
+            const frame = document.getElementById('paymentFrame');
+            const iframe = document.getElementById('paymentIframe');
+            iframe.src = '';
+            frame.style.display = 'none';
+            window.removeEventListener('message', handlePaymentMessage);
+            clearInterval(parseInt(frame.dataset.urlCheckInterval));
+        }
+
+        function handlePaymentMessage(event) {
+            if (event.origin !== "https://live.fedapay.com/") return;
+
+            if (event.data.status === "success" || event.data.url === "http://cyberducampus.net/") {
+                closePaymentFrame();
+                handleSuccessfulPayment(event.data.ticketName);
+            }
+        }
+
+        function monitorIframeUrl() {
+            const iframe = document.getElementById('paymentIframe');
+            try {
+                const iframeUrl = iframe.contentWindow.location.href;
+                if (iframeUrl.toLowerCase().includes('cyberducampus')) {
+                    closePaymentFrame();
+                    const lastTicketName = localStorage.getItem('lastTicketName');
+                    if (lastTicketName) {
+                        handleSuccessfulPayment(lastTicketName);
+                    } else {
+                        console.warn("Aucune information de ticket trouvée. Le paiement semble réussi mais les détails sont manquants.");
+                        showNotification("Paiement réussi", "Votre paiement semble avoir été traité avec succès. Si vous ne voyez pas votre ticket, veuillez contacter le support.");
+                    }
+                }
+            } catch (e) {
+                console.error("Erreur de sécurité lors de la surveillance de l'URL de l'iframe : ", e);
+            }
+        }
+
+
+        async function handleSuccessfulPayment(ticketName) {
+            try {
+                if (localTickets[ticketName]) {
+                    const ticketData = localTickets[ticketName];
+                    const index = parseInt(localStorage.getItem('ticketIndex'));
+
+                    if (index !== undefined && index >= 0 && index < ticketData.utilisateur.length) {
+
+                        const achatEnCoursRef = ref(db, 'AchatEnCours');
+                        const snapshot = await get(achatEnCoursRef);
+                        const achatsEnCours = snapshot.val() || {};
+
+                        for (const ticketId in achatsEnCours) {
+                            const ticket = achatsEnCours[ticketId];
+                            if (ticket.user === ticketData.utilisateur[index] &&
+                                ticket.password === ticketData.motDePasse[index] &&
+                                ticket.price === ticketData.prix[index]) {
+                                await remove(ref(db, `AchatEnCours/${ticketId}`));
+                                break;
+                            }
+                        }
+
+                        const ticketsVendusRef = ref(db, 'TicketsVendus');
+                        const newTicketRef = push(ticketsVendusRef);
+                        await set(newTicketRef, {
+                            user: ticketData.utilisateur[index],
+                            password: ticketData.motDePasse[index],
+                            price: ticketData.prix[index]
+                        });
+
+                        showNotification("Ticket acheté",
+                            `Nom d'utilisateur: ${ticketData.utilisateur[index]}\n` +
+                            `Mot de passe: ${ticketData.motDePasse[index]}\n` +
+                            `Prix: ${ticketData.prix[index]} F`,
+                            true
+                        );
+
+                        ticketData.utilisateur.splice(index, 1);
+                        ticketData.motDePasse.splice(index, 1);
+                        ticketData.prix.splice(index, 1);
+
+                        if (ticketData.utilisateur.length === 0) {
+                            delete localTickets[ticketName];
+                        }
+
+                        localStorage.removeItem('lastTicketName');
+                        localStorage.removeItem('ticketIndex');
+                        
+                        // Envoyer les informations du ticket à la page parente
+                        window.parent.postMessage({
+                            type: 'ticketPurchased',
+                            username: ticketData.utilisateur[index],
+                            password: ticketData.motDePasse[index]
+                        }, '*');
+                    } else {
+                        showNotification("Erreur", "Impossible de récupérer les informations du ticket.");
+                    }
+                } else {
+                    showNotification("Erreur", "Ticket non trouvé");
+                }
+            } catch (error) {
+                console.error("Erreur lors du traitement du paiement réussi :", error);
+                showNotification("Erreur", "Une erreur s'est produite lors du traitement de votre achat.");
+                logTransactionError();
+            }
+        }
+
+
+        function showNotification(title, message, isTicketPurchase = false) {
+            const notification = document.getElementById('notification');
+            const notificationTitle = document.getElementById('notification-title');
+            const notificationMessage = document.getElementById('notification-message');
+
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+
+            const closeIcon = document.querySelector('.close-icon');
+            closeIcon.addEventListener('click', hideNotification);
+
+            notification.style.display = 'block';
+        }
+
+        function hideNotification() {
+            document.getElementById('notification').style.display = 'none';
+        }
+
+        function logTransactionError() {
+            const timestamp = new Date().toISOString();
+            const errorRef = ref(db, 'TransactionErrors');
+            push(errorRef, { timestamp });
+            console.log(`Erreur de transaction enregistrée à ${timestamp}`);
+        }
+
+        window.buyTicket = buyTicket;
+        window.closePaymentFrame = closePaymentFrame;
     </script>
 </head>
 <body>
@@ -394,5 +738,21 @@ footer {
             <td><button onclick="buyTicket('30 Jours Pro (illimité)')">Payer</button></td>
         </tr>
     </table>
+
+    <div class="notification" id="notification">
+        <span class="close-icon" onclick="hideNotification()">×</span>
+        <h2 id="notification-title"></h2>
+        <p id="notification-message"></p>
+    </div>
+
+    <div id="paymentFrame">
+        <div>
+            <button id="closePaymentFrame" onclick="closePaymentFrame()">×</button>
+            <div class="loading-icon">
+                <img src="loading.gif" alt="Chargement...">
+            </div>
+            <iframe id="paymentIframe"></iframe>
+        </div>
+    </div>
 </body>
 </html>

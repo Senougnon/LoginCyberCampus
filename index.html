@@ -159,29 +159,19 @@ footer {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(246, 255, 123, 0.404);
+    background-color: rgba(0, 0, 0, 0.8);
     z-index: 1000;
 }
 
 #paymentFrame > div {
     position: relative;
-    width: 100%;
-    height: 100%;
-    margin: 0% auto; /* Ceci est déjà présent dans votre code */
-    background-color: rgb(253, 255, 223);
-    border-radius: 3px;
+    width: 80%;
+    height: 80%;
+    margin: 5% auto;
+    background-color: white;
+    border-radius: 10px;
     overflow: hidden;
-    display: flex; /* Ajoutez cette ligne */
-    justify-content: center; /* Ajoutez cette ligne */
-    align-items: center; /* Ajoutez cette ligne */
 }
-
-#paymentIframe {
-    width: 100%; /* Vous pouvez ajuster la largeur si nécessaire */
-    height: 100%; /* Vous pouvez ajuster la hauteur si nécessaire */
-    border: none;
-}
-
 
 #closePaymentFrame {
     position: absolute;
@@ -200,25 +190,6 @@ footer {
     height: 100%;
     border: none;
 }
-
-        #paymentFrame .loading-icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: none; /* Masquer l'icône par défaut */
-        }
-
-        #paymentFrame .loading-icon img {
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
 
 .delete-button {
     background-color: #f44336; /* Rouge pour un bouton de suppression */
@@ -276,115 +247,41 @@ footer {
 .login-section {
             display: none; /* Masquer la section de connexion */
         }
-  
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            color: white;
-        }
-
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            display: none;
-            color: #1a2a6c;
-            text-align: center;
-        }
-
-        .notification h2 {
-            color: #1a2a6c;
-            margin-bottom: 20px;
-        }
-
-        .notification p {
-            margin-bottom: 15px;
-        }
-
-        .close-icon {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 20px;
-        }
-
-        #paymentFrame {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(246, 255, 123, 0.404);
-            z-index: 1000;
-        }
-
-        #paymentFrame > div {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            margin: 0% auto;
-            background-color: rgb(253, 255, 223);
-            border-radius: 3px;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #paymentIframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        #closePaymentFrame {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1001;
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #1a2a6c;
-        }
-
-        #paymentFrame .loading-icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: none; /* Masquer l'icône par défaut */
-        }
-
-        #paymentFrame .loading-icon img {
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
     </style>
+
+    $(if chap-id)
+    <form name="sendin" action="$(link-login-only)" method="post" style="display:none">
+        <input type="hidden" name="username" />
+        <input type="hidden" name="password" />
+        <input type="hidden" name="dst" value="$(link-orig)" />
+        <input type="hidden" name="popup" value="true" />
+    </form>
+
+    <script src="/md5.js"></script>
+    <script>
+        function doLogin() {
+            document.sendin.username.value = document.login.username.value;
+            document.sendin.password.value = hexMD5('$(chap-id)' + document.login.password.value + '$(chap-challenge)');
+            document.sendin.submit();
+            return false;
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+    // Afficher la notification immédiatement après le chargement du DOM
+    showNotification("Erreur de chargement!", "Oups! cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/");
+
+    // Synchroniser les données après l'affichage de la notification
+    syncTickets().then(() => {
+        // Fermer la notification une fois la synchronisation terminée
+        hideNotification();
+    });
+
+    setInterval(syncTickets, 5000); 
+});
+    </script>
+    $(endif)
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, get, remove, set, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getDatabase, ref, get, update, remove, set, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB6AUBnK_7Vy2ABWI2JMo3ebG_Sljr8XlY",
@@ -397,11 +294,12 @@ footer {
             measurementId: "G-CEEFJP5LYZ"
         };
 
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let localTickets = {};
+        
+
+        let localTickets = {}; 
 
         // Fonction pour synchroniser les données
         async function syncTickets() {
@@ -410,24 +308,28 @@ footer {
                 const ticketsFromJSON = await response.json();
                 const ticketsVendusRef = ref(db, 'TicketsVendus');
                 const snapshot = await get(ticketsVendusRef);
-                const ticketsVendus = snapshot.val() || {};
+                const ticketsVendus = snapshot.val() || {}; // Assurez-vous que ticketsVendus est un objet
 
+                // Copiez les données de ticketsFromJSON dans localTickets
                 localTickets = JSON.parse(JSON.stringify(ticketsFromJSON));
 
+                // Parcourir tous les tickets vendus
                 for (const ticketId in ticketsVendus) {
                     const ticketVendu = ticketsVendus[ticketId];
                     const ticketName = Object.keys(localTickets).find(
-                        (key) => localTickets[key].utilisateur.includes(ticketVendu.user)
+                        (key) => localTickets[key].utilisateur.includes(ticketVendu.user) 
                     );
 
                     if (ticketName) {
                         const ticketIndex = localTickets[ticketName].utilisateur.indexOf(ticketVendu.user);
 
                         if (ticketIndex > -1) {
+                            // Supprimer l'utilisateur, le mot de passe et le prix de localTickets
                             localTickets[ticketName].utilisateur.splice(ticketIndex, 1);
                             localTickets[ticketName].motDePasse.splice(ticketIndex, 1);
                             localTickets[ticketName].prix.splice(ticketIndex, 1);
 
+                            // Supprimer le ticket de localTickets s'il n'y a plus de tickets disponibles
                             if (localTickets[ticketName].utilisateur.length === 0) {
                                 delete localTickets[ticketName];
                             }
@@ -441,65 +343,44 @@ footer {
             }
         }
 
+
+
+
+        function storeTicketLocally(ticketData) {
+            localStorage.setItem('storedTicket', JSON.stringify(ticketData));
+        }
+
+        function updateButtonText() {
+            const payButton = document.querySelector('.nav-button.animate-pay');
+            const storedTicket = localStorage.getItem('storedTicket');
+
+            if (storedTicket) {
+                payButton.textContent = 'Voir mon ticket';
+            } else {
+                payButton.textContent = 'Payer un ticket';
+            }
+        }
+
+                // Fonction pour afficher le tableau des tarifs après la synchronisation
+                function showTariffsTable() {
+            const tariffsTable = document.querySelector('.rates-section table');
+            const loadingMessage = document.querySelector('.rates-section .loading-message');
+            tariffsTable.style.display = 'table';
+            loadingMessage.style.display = 'none';
+        }
+
+        // Appel de la fonction showTariffsTable après la synchronisation des données
         document.addEventListener('DOMContentLoaded', () => {
             syncTickets();
             setInterval(syncTickets, 5000);
+            showTariffsTable();
         });
-
-        async function buyTicket(ticketName) {
-            if (!ticketName) {
-                showNotification("Echec de chargement", "Oups! cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/");
-                return;
-            }
-
-            try {
-                if (localTickets[ticketName]) {
-                    const ticketData = localTickets[ticketName];
-                    const ticketDisponible = ticketData.utilisateur.length > 0;
-
-                    if (ticketDisponible) {
-                        const index = 0;
-
-                        const achatEnCoursRef = ref(db, 'AchatEnCours');
-                        const newTicketRef = push(achatEnCoursRef);
-                        await set(newTicketRef, {
-                            user: ticketData.utilisateur[index],
-                            password: ticketData.motDePasse[index],
-                            price: ticketData.prix[index]
-                        });
-
-                        localStorage.setItem('lastTicketName', ticketName);
-                        localStorage.setItem('ticketIndex', index);
-
-                        const paymentLink = ticketData.lienPaiement;
-
-                        openPaymentFrame(paymentLink);
-                    } else {
-                        showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
-                    }
-                } else {
-                    showNotification("Erreur", "Ticket non trouvé");
-                }
-            } catch (error) {
-                console.error("Erreur lors de la récupération du ticket : ", error);
-                showNotification("Erreur", "Une erreur s'est produite lors de la récupération du ticket.");
-                logTransactionError();
-            }
-        }
 
         function openPaymentFrame(paymentLink) {
             const frame = document.getElementById('paymentFrame');
             const iframe = document.getElementById('paymentIframe');
             iframe.src = paymentLink;
             frame.style.display = 'block';
-
-            const loadingIcon = document.querySelector('#paymentFrame .loading-icon');
-            loadingIcon.style.display = 'block';
-
-            iframe.onload = () => {
-                loadingIcon.style.display = 'none';
-            };
-
             window.addEventListener('message', handlePaymentMessage);
             const urlCheckInterval = setInterval(monitorIframeUrl, 500);
             frame.dataset.urlCheckInterval = urlCheckInterval;
@@ -542,61 +423,87 @@ footer {
             }
         }
 
+        async function buyTicket(ticketName) {
+            if (!ticketName) {
+                showNotification("Echec de chargement", "Oups! cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/");
+                return;
+            }
+            
+            try {
+                // Vérifier si le ticket existe dans localTickets
+                if (localTickets[ticketName]) {
+                    const ticketData = localTickets[ticketName];
+                    const ticketDisponible = ticketData.utilisateur.length > 0;
+                    
+                    if (ticketDisponible) {
+                        // Trouver l'index du premier ticket disponible
+                        const index = 0;
+        
+                        // Stocker le nom du ticket et l'index dans localStorage
+                        localStorage.setItem('lastTicketName', ticketName);
+                        localStorage.setItem('ticketIndex', index);
+        
+                        const paymentLink = ticketData.lienPaiement; 
+                        // await handleKeyChange(ticketName); // Changement de clé si nécessaire
+                        openPaymentFrame(paymentLink); 
+                    } else {
+                        showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
+                    }
+                } else {
+                    showNotification("Erreur", "Ticket non trouvé");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération du ticket : ", error);
+                showNotification("Erreur", "Une erreur s'est produite lors de la récupération du ticket.");
+                logTransactionError(); 
+            }
+        }
+        
+        window.buyTicket = buyTicket;
+        window.closePaymentFrame = closePaymentFrame;
 
         async function handleSuccessfulPayment(ticketName) {
             try {
+                // Utiliser localTickets au lieu de récupérer les données depuis Tickets.json
                 if (localTickets[ticketName]) {
                     const ticketData = localTickets[ticketName];
                     const index = parseInt(localStorage.getItem('ticketIndex'));
-
+        
                     if (index !== undefined && index >= 0 && index < ticketData.utilisateur.length) {
-
-                        const achatEnCoursRef = ref(db, 'AchatEnCours');
-                        const snapshot = await get(achatEnCoursRef);
-                        const achatsEnCours = snapshot.val() || {};
-
-                        for (const ticketId in achatsEnCours) {
-                            const ticket = achatsEnCours[ticketId];
-                            if (ticket.user === ticketData.utilisateur[index] &&
-                                ticket.password === ticketData.motDePasse[index] &&
-                                ticket.price === ticketData.prix[index]) {
-                                await remove(ref(db, `AchatEnCours/${ticketId}`));
-                                break;
-                            }
-                        }
-
-                        const ticketsVendusRef = ref(db, 'TicketsVendus');
-                        const newTicketRef = push(ticketsVendusRef);
-                        await set(newTicketRef, {
+                        storeTicketLocally({
+                            ticketName: ticketName,
                             user: ticketData.utilisateur[index],
                             password: ticketData.motDePasse[index],
                             price: ticketData.prix[index]
                         });
-
+                    // 3. Enregistrer les informations du ticket vendu dans Firebase
+                      const ticketsVendusRef = ref(db, 'TicketsVendus');
+                      const newTicketRef = push(ticketsVendusRef);
+                      await set(newTicketRef, {
+                          user: ticketData.utilisateur[index],
+                          password: ticketData.motDePasse[index],
+                          price: ticketData.prix[index]
+                      });
+        
                         showNotification("Ticket acheté",
                             `Nom d'utilisateur: ${ticketData.utilisateur[index]}\n` +
                             `Mot de passe: ${ticketData.motDePasse[index]}\n` +
                             `Prix: ${ticketData.prix[index]} F`,
-                            true
+                            true 
                         );
-
+        
+                        // Supprimer le ticket acheté de localTickets
                         ticketData.utilisateur.splice(index, 1);
                         ticketData.motDePasse.splice(index, 1);
                         ticketData.prix.splice(index, 1);
-
+        
+                        // Supprimer le ticket de localTickets s'il n'y a plus de tickets disponibles
                         if (ticketData.utilisateur.length === 0) {
                             delete localTickets[ticketName];
                         }
-
+        
                         localStorage.removeItem('lastTicketName');
                         localStorage.removeItem('ticketIndex');
-                        
-                        // Envoyer les informations du ticket à la page parente
-                        window.parent.postMessage({
-                            type: 'ticketPurchased',
-                            username: ticketData.utilisateur[index],
-                            password: ticketData.motDePasse[index]
-                        }, '*');
                     } else {
                         showNotification("Erreur", "Impossible de récupérer les informations du ticket.");
                     }
@@ -606,18 +513,83 @@ footer {
             } catch (error) {
                 console.error("Erreur lors du traitement du paiement réussi :", error);
                 showNotification("Erreur", "Une erreur s'est produite lors du traitement de votre achat.");
-                logTransactionError();
+                logTransactionError(); 
             }
         }
 
-
-        function showNotification(title, message, isTicketPurchase = false) {
+        function showNotification(title, message, isTicketPurchase = false, isError = false) {
             const notification = document.getElementById('notification');
             const notificationTitle = document.getElementById('notification-title');
             const notificationMessage = document.getElementById('notification-message');
+            const payButton = document.querySelector('.notification button');
+
+            const existingLoginButton = notification.querySelector('.login-button');
+            if (existingLoginButton) {
+                existingLoginButton.remove();
+            }
+            const existingDeleteButton = notification.querySelector('.delete-button');
+            if (existingDeleteButton) {
+                existingDeleteButton.remove();
+            }
 
             notificationTitle.textContent = title;
             notificationMessage.textContent = message;
+
+            const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
+
+            if (storedTicket) {
+                notificationTitle.textContent = 'Votre ticket';
+                notificationMessage.textContent = `
+                    Nom d'utilisateur: ${storedTicket.user}
+                    Mot de passe: ${storedTicket.password}
+                    Prix: ${storedTicket.price} F
+                `;
+                payButton.style.display = 'none';
+
+                const loginButton = document.createElement('button');
+                loginButton.className = 'login-button';
+                loginButton.textContent = 'Connexion';
+                loginButton.addEventListener('click', () => {
+                    autoLogin(storedTicket.user, storedTicket.password);
+                });
+                notification.appendChild(loginButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-button';
+                deleteButton.textContent = 'Supprimer';
+                deleteButton.addEventListener('click', () => {
+                    deleteTicket();
+                });
+                notification.appendChild(deleteButton);
+            } else if (isTicketPurchase) {
+                payButton.style.display = 'none'; 
+                const loginButton = document.createElement('button');
+                loginButton.className = 'login-button';
+                loginButton.textContent = 'Connexion';
+                loginButton.addEventListener('click', () => {
+                    const lines = message.split('\n');
+                    const username = lines[0].split(': ')[1];
+                    const password = lines[1].split(': ')[1];
+                    autoLogin(username, password);
+                });
+                notification.appendChild(loginButton);
+            } else {
+                payButton.style.display = 'none';
+                const existingLoginButton = notification.querySelector('.login-button');
+                if (existingLoginButton) {
+                    existingLoginButton.remove();
+                }
+                const existingDeleteButton = notification.querySelector('.delete-button');
+                if (existingDeleteButton) {
+                    existingDeleteButton.remove();
+                }
+            }
+
+            if (isError) {
+                notification.classList.add('error');
+            } else {
+                notification.classList.remove('error');
+            }
 
             const closeIcon = document.querySelector('.close-icon');
             closeIcon.addEventListener('click', hideNotification);
@@ -625,134 +597,251 @@ footer {
             notification.style.display = 'block';
         }
 
+      // Sélectionner le champ du nom d'utilisateur
+      const usernameInput = document.querySelector('input[name="username"]');
+
+// Ajouter un écouteur d'événement pour le changement du champ (input event)
+usernameInput.addEventListener('input', function() {
+  // Récupérer la valeur actuelle du champ
+  let username = this.value;
+
+  // Utiliser une expression régulière pour supprimer les espaces à la fin du dernier mot
+  username = username.replace(/(\s*$)/g, ""); 
+
+  // Mettre à jour la valeur du champ avec la version sans espaces supplémentaires
+  this.value = username;
+});
+      
+// Fonction pour effectuer la connexion automatique
+function autoLogin() {
+  const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
+  if (storedTicket) {
+      document.login.username.value = storedTicket.user;
+      document.login.password.value = storedTicket.password;
+      document.login.submit();
+      console.log("Connexion automatique effectuée avec succès.");
+  } else {
+      console.log("Aucune information de connexion trouvée pour la connexion automatique.");
+  }
+}
+
+// Déclencher l'événement 'autoLoginAttempt' pour tenter la connexion automatique
+const autoLoginEvent = new Event('autoLoginAttempt');
+document.dispatchEvent(autoLoginEvent); 
+
+// Ecouteur d'événement pour 'autoLoginAttempt'
+document.addEventListener('autoLoginAttempt', function() {
+  autoLogin();
+});
+      
+              function logTransactionError() {
+                  const timestamp = new Date().toISOString();
+                  const errorRef = collection(db, 'TransactionErrors');
+                  addDoc(errorRef, { timestamp });
+                  console.log(`Erreur de transaction enregistrée à ${timestamp}`);
+              }
+              
+      
+// ... (votre code existant)
+
+function handleLogin(event) {
+  event.preventDefault();
+  var form = document.forms['login'];
+  var username = form.username.value;
+  var password = form.password.value;
+
+  // Vérifier si un ticket est déjà stocké
+  localStorage.removeItem('storedTicket');
+  const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
+
+  // Stocker les informations de connexion si le stockage est vide OU si les informations existantes ne proviennent pas d'un achat
+  if (!storedTicket || !storedTicket.purchaseDate) { 
+      const ticketData = {
+          user: username,
+          password: password,
+          // Vous pouvez stocker le prix ici si nécessaire, sinon supprimez la ligne
+          purchaseDate: new Date().toISOString() // Marquer la date d'achat
+      };
+      localStorage.setItem('storedTicket', JSON.stringify(ticketData));
+      console.log("Nouvelles informations de connexion stockées :", ticketData);
+  } else {
+      console.log("Un ticket acheté est déjà stocké. Pas besoin de modifier les informations.");
+  }
+
+  // Continuez avec la logique de connexion existante
+
+  document.dispatchEvent(autoLoginEvent); 
+}
+
+document.forms['login'].addEventListener('submit', handleLogin);
+
         function hideNotification() {
             document.getElementById('notification').style.display = 'none';
         }
 
-        function logTransactionError() {
-            const timestamp = new Date().toISOString();
-            const errorRef = ref(db, 'TransactionErrors');
-            push(errorRef, { timestamp });
-            console.log(`Erreur de transaction enregistrée à ${timestamp}`);
+        function deleteTicket() {
+            localStorage.removeItem('storedTicket');
+            showNotification("Ticket supprimé", "Votre ticket a été supprimé avec succès.");
+            const deleteButton = document.querySelector('.delete-button');
+            if (deleteButton) {
+                deleteButton.remove();
+            }
+            const loginButton = document.querySelector('.login-button');
+            if (loginButton) {
+                loginButton.style.display = 'block';
+            }
+            updateButtonText();
         }
 
-        window.buyTicket = buyTicket;
-        window.closePaymentFrame = closePaymentFrame;
+        window.addEventListener('load', () => {
+            updateButtonText();
+        });
+
+        const payButton = document.querySelector('.nav-button.animate-pay');
+        payButton.addEventListener('click', () => {
+            const storedTicket = localStorage.getItem('storedTicket');
+            if (storedTicket) {
+                showNotification('Votre ticket', 'Nom d\'utilisateur : ' + JSON.parse(storedTicket).user + '\nMot de passe : ' + JSON.parse(storedTicket).password + '\nPrix : ' + JSON.parse(storedTicket).price + ' F');
+            } else {
+                document.querySelector('.rates-section').scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
     </script>
 </head>
 <body>
-    <table>
-        <tr>
-            <th>Forfait</th>
-            <th>Prix</th>
-            <th>Payer</th>
-        </tr>
-        <tr>
-            <td>1 Heure</td>
-            <td>100 F</td>
-            <td><button onclick="buyTicket('1 Heure')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>2 Heures</td>
-            <td>200 F</td>
-            <td><button onclick="buyTicket('2 Heures')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>3 Heures</td>
-            <td>250 F</td>
-            <td><button onclick="buyTicket('3 Heures')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>1 Heure Pro</td>
-            <td>250 F</td>
-            <td><button onclick="buyTicket('1 Heure Pro')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>2 Heures Pro</td>
-            <td>450 F</td>
-            <td><button onclick="buyTicket('2 Heures Pro')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>3 Heures Pro</td>
-            <td>600 F</td>
-            <td><button onclick="buyTicket('3 Heures Pro')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>1 Go</td>
-            <td>100 F</td>
-            <td><button onclick="buyTicket('1 Go')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>5 Go</td>
-            <td>400 F</td>
-            <td><button onclick="buyTicket('5 Go')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>10 Go</td>
-            <td>700 F</td>
-            <td><button onclick="buyTicket('10 Go')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>25 Go</td>
-            <td>1500 F</td>
-            <td><button onclick="buyTicket('25 Go')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>1 Jour (illimité)</td>
-            <td>300 F</td>
-            <td><button onclick="buyTicket('1 Jour (illimité)')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>3 Jours (illimité)</td>
-            <td>600 F</td>
-            <td><button onclick="buyTicket('3 Jours (illimité)')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>7 Jours (illimité)</td>
-            <td>1200 F</td>
-            <td><button onclick="buyTicket('7 Jours (illimité)')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>30 Jours (illimité)</td>
-            <td>4000 F</td>
-            <td><button onclick="buyTicket('30 Jours (illimité)')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>1 Jour Pro (illimité)</td>
-            <td>600 F</td>
-            <td><button onclick="buyTicket('1 Jour Pro (illimité)')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>3 Jours Pro (illimité)</td>
-            <td>1200 F</td>
-            <td><button onclick="buyTicket('3 Jours Pro (illimité)')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>7 Jours Pro (illimité)</td>
-            <td>2400 F</td>
-            <td><button onclick="buyTicket('7 Jours Pro (illimité)')">Payer</button></td>
-        </tr>
-        <tr>
-            <td>30 Jours Pro (illimité)</td>
-            <td>8000 F</td>
-            <td><button onclick="buyTicket('30 Jours Pro (illimité)')">Payer</button></td>
-        </tr>
-    </table>
+
+    <main class="container">
+        <section class="login-section">
+            <h2>Connexion</h2>
+            <form name="login" action="$(link-login-only)" method="post" $(if chap-id) onSubmit="return doLogin()" $(endif)>
+                <input type="hidden" name="dst" value="$(link-orig)" />
+                <input type="hidden" name="popup" value="true" />
+                <input type="text" name="username" placeholder="Nom d'utilisateur" value="$(username)" required>
+                <input type="password" name="password" placeholder="Mot de passe" required>
+                <button type="submit">Se connecter</button>
+            </form>
+            <p class="info $(if error)alert$(endif)">
+                $(if error == "")Veuillez vous connecter pour utiliser le service hotspot Internet $(if trial == 'yes')<br />Essai gratuit disponible, <a href="$(link-login-only)?dst=$(link-orig-esc)&username=T-$(mac-esc)">cliquez ici</a>.$(endif)
+                $(endif)
+                $(if error)$(error)$(endif)
+            </p>
+        </section>
+
+        <section class="rates-section">
+           
+            <table>
+                <tr>
+                    <th>Forfait</th>
+                    <th>Prix</th>
+                    <th>Payer</th>
+                </tr>
+                <tr>
+                    <td>1 Heure</td>
+                    <td onclick="buyTicket('1 Heure')">100 F</td>
+                    <td><button onclick="buyTicket('1 Heure')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>2 Heures</td>
+                    <td onclick="buyTicket('2 Heures')">200 F</td>
+                    <td><button onclick="buyTicket('2 Heures')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>3 Heure</td>
+                    <td onclick="buyTicket('3 Heures')">250 F</td>
+                    <td><button onclick="buyTicket('3 Heures')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>1 Heure Pro</td>
+                    <td onclick="buyTicket('1 Heure Pro')">250 F</td>
+                    <td><button onclick="buyTicket('1 Heure Pro')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>2 Heures Pro</td>
+                    <td onclick="buyTicket('2 Heures Pro')">450 F</td>
+                    <td><button onclick="buyTicket('2 Heures Pro')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>3 Heure Pro</td>
+                    <td onclick="buyTicket('3 Heures Pro')">600 F</td>
+                    <td><button onclick="buyTicket('3 Heures Pro')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>1 Go</td>
+                    <td onclick="buyTicket('1 Go')">100 F</td>
+                    <td><button onclick="buyTicket('1 Go')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>5 Go</td>
+                    <td onclick="buyTicket('5 Go')">400 F</td>
+                    <td><button onclick="buyTicket('5 Go')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>10 Go</td>
+                    <td onclick="buyTicket('10 Go')">700 F</td>
+                    <td><button onclick="buyTicket('10 Go')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>25 Go</td>
+                    <td onclick="buyTicket('25 Go')">1500 F</td>
+                    <td><button onclick="buyTicket('25 Go')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>1 Jour (illimité)</td>
+                    <td onclick="buyTicket('1 Jour (illimité)')">300 F</td>
+                    <td><button onclick="buyTicket('1 Jour (illimité)')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>3 Jours (illimité)</td>
+                    <td onclick="buyTicket('3 Jours (illimité)')">600 F</td>
+                    <td><button onclick="buyTicket('3 Jours (illimité)')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>7 Jours (illimité)</td>
+                    <td onclick="buyTicket('7 Jours (illimité)')">1200 F</td>
+                    <td><button onclick="buyTicket('7 Jours (illimité)')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>30 Jours (illimité)</td>
+                    <td onclick="buyTicket('30 Jours (illimité)')">4000 F</td>
+                    <td><button onclick="buyTicket('30 Jours (illimité)')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>1 Jour Pro (illimité)</td>
+                    <td onclick="buyTicket('1 Jour Pro (illimité)')">600 F</td>
+                    <td><button onclick="buyTicket('1 Jour Pro (illimité)')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>3 Jours Pro (illimité)</td>
+                    <td onclick="buyTicket('3 Jours Pro (illimité)')">1200 F</td>
+                    <td><button onclick="buyTicket('3 Jours Pro (illimité)')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>7 Jours Pro (illimité)</td>
+                    <td onclick="buyTicket('7 Jours Pro (illimité)')">2400 F</td>
+                    <td><button onclick="buyTicket('7 Jours Pro (illimité)')">Payer</button></td>
+                </tr>
+                <tr>
+                    <td>30 Jours Pro (illimité)</td>
+                    <td onclick="buyTicket('30 Jours Pro (illimité)')">8000 F</td>
+                    <td><button onclick="buyTicket('30 Jours Pro (illimité)')">Payer</button></td>
+                </tr>
+            </table>
+        </section>
 
     <div class="notification" id="notification">
         <span class="close-icon" onclick="hideNotification()">×</span>
-        <h2 id="notification-title"></h2>
-        <p id="notification-message"></p>
+        <h2 id="notification-title">Erreur de chargement!</h2>
+        <p id="notification-message">Cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/</p>
+        <button style="display: none;" onclick="buyTicket(document.getElementById('nomTicket').value)">Payer</button>
     </div>
 
     <div id="paymentFrame">
         <div>
             <button id="closePaymentFrame" onclick="closePaymentFrame()">×</button>
-            <div class="loading-icon">
-                <img src="loading.gif" alt="Chargement...">
-            </div>
             <iframe id="paymentIframe"></iframe>
         </div>
     </div>
+
 </body>
 </html>

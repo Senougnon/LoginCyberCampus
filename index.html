@@ -113,6 +113,8 @@ footer {
     position: fixed;
     top: 50%;
     left: 50%;
+                width: 100%; /* Occupant toute la largeur de l'écran */
+            height: 100%; /* Occupant toute la hauteur de l'écran */
     transform: translate(-50%, -50%);
     background: rgba(255, 255, 255, 0.9);
     border-radius: 10px;
@@ -540,12 +542,12 @@ footer {
                 window.parent.postMessage({ type: 'ticketPurchased', ticketData: storedTicket }, '*');
 
                 // Afficher la notification sur la page actuelle (facultatif)
-               // showNotification("Ticket acheté",
-               //     `Nom d'utilisateur: ${ticketData.utilisateur[index]}\n` +
-               //     `Mot de passe: ${ticketData.motDePasse[index]}\n` +
-               //     `Prix: ${ticketData.prix[index]} F`,
-                //    true 
-              // );
+                showNotification("Ticket acheté",
+                    `Nom d'utilisateur: ${ticketData.utilisateur[index]}\n` +
+                    `Mot de passe: ${ticketData.motDePasse[index]}\n` +
+                    `Prix: ${ticketData.prix[index]} F`,
+                    true 
+               );
 
                 // Supprimer le ticket acheté de localTickets
                 ticketData.utilisateur.splice(index, 1);

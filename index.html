@@ -334,16 +334,15 @@ footer {
         // Fonction pour synchroniser les données
         async function syncTickets() {
             try {
-                const response = await fetch('Tickets.json');
-                const ticketsFromJSON = await response.json();
+                const ticketsTotalRef = ref(db, 'TicketsTotal');
+                const snapshot = await get(ticketsTotalRef);
+                localTickets = snapshot.val() || {}; // Récupérer les tickets depuis Firebase
+
                 const ticketsVendusRef = ref(db, 'TicketsVendus');
-                const snapshot = await get(ticketsVendusRef);
-                const ticketsVendus = snapshot.val() || {}; // Assurez-vous que ticketsVendus est un objet
+                const snapshotVendus = await get(ticketsVendusRef);
+                const ticketsVendus = snapshotVendus.val() || {};
 
-                // Copiez les données de ticketsFromJSON dans localTickets
-                localTickets = JSON.parse(JSON.stringify(ticketsFromJSON));
-
-                // Parcourir tous les tickets vendus
+                // Supprimer les tickets vendus de localTickets
                 for (const ticketId in ticketsVendus) {
                     const ticketVendu = ticketsVendus[ticketId];
                     const ticketName = Object.keys(localTickets).find(
@@ -354,12 +353,10 @@ footer {
                         const ticketIndex = localTickets[ticketName].utilisateur.indexOf(ticketVendu.user);
 
                         if (ticketIndex > -1) {
-                            // Supprimer l'utilisateur, le mot de passe et le prix de localTickets
                             localTickets[ticketName].utilisateur.splice(ticketIndex, 1);
                             localTickets[ticketName].motDePasse.splice(ticketIndex, 1);
                             localTickets[ticketName].prix.splice(ticketIndex, 1);
 
-                            // Supprimer le ticket de localTickets s'il n'y a plus de tickets disponibles
                             if (localTickets[ticketName].utilisateur.length === 0) {
                                 delete localTickets[ticketName];
                             }

@@ -23,202 +23,7 @@ body {
     overflow-x: hidden;
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
 
-header {
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 20px 0;
-    position: relative;
-    overflow: hidden;
-}
-
-.header-image {
-    width: 100%;
-    height: 300px;
-    object-fit: cover;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: -1;
-}
-
-.img1 {
-    animation: slide1 10s linear infinite;
-}
-
-.img2 {
-    animation: slide2 10s linear infinite;
-}
-
-.logo {
-    font-size: 2.5em;
-    color: white;
-    text-align: center;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    position: relative;
-    z-index: 2;
-}
-
-.logo::before {
-    content: '';
-    font-size: 0.8em;
-    margin-right: 10px;
-    animation: rotate 5s linear infinite;
-    display: inline-block;
-}
-
-@keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.moon {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    font-size: 2em;
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-
-nav {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-}
-
-.nav-button {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-}
-
-.nav-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: width 0.5s, height 0.5s;
-}
-
-.nav-button:hover::before {
-    width: 300px;
-    height: 300px;
-}
-
-@keyframes buttonPulse {
-    0% { background-color: #fdbb2d; color: #1a2a6c; }
-    50% { background-color: #1a2a6c; color: #fdbb2d; }
-    100% { background-color: #fdbb2d; color: #1a2a6c; }
-}
-
-.nav-button.animate-pay {
-    animation: buttonPulse 3s ease-in-out infinite;
-}
-
-@keyframes textChange {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
-
-.nav-button.animate-pay {
-    animation: textChange 0.5s ease-in-out, buttonPulse 3s ease-in-out infinite;
-}
-
-main {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    margin-top: 40px;
-    position: relative;
-}
-
-.login-section, .rates-section, .locations-section, .products-section {
-    background-color: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.login-section:hover, .rates-section:hover, .locations-section:hover, .products-section:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-}
-
-.login-section {
-    flex-basis: 100%;
-}
-
-.rates-section, .locations-section, .products-section {
-    flex-basis: calc(33.333% - 20px);
-}
-
-h2 {
-    color: white;
-    margin-bottom: 15px;
-    position: relative;
-    display: inline-block;
-}
-
-h2::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background-color: #fdbb2d;
-    transition: width 0.3s;
-}
-
-.login-section:hover h2::after,
-.rates-section:hover h2::after,
-.locations-section:hover h2::after,
-.products-section:hover h2::after {
-    width: 100%;
-}
-
-form {
-    display: flex;
-    flex-direction: column;
-}
-
-input {
-    margin-bottom: 10px;
-    padding: 10px;
-    border: none;
-    border-radius: 25px;
-    background-color: rgb(253, 242, 221);
-    color: white;
-    transition: background-color 0.3s;
-}
-
-input:focus {
-    background-color: rgba(255, 255, 255, 0.3);
-    outline: none;
-}
 
 button {
     background-color: #fdbb2d;
@@ -354,7 +159,7 @@ footer {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(246, 255, 123, 0.404);
+    background-color: rgba(0, 0, 0, 0.8);
     z-index: 1000;
 }
 
@@ -367,7 +172,6 @@ footer {
     border-radius: 10px;
     overflow: hidden;
 }
-
 
 #closePaymentFrame {
     position: absolute;
@@ -440,6 +244,9 @@ footer {
     background-color: #1a2a6c;
     color: #fdbb2d;
 }
+.login-section {
+            display: none; /* Masquer la section de connexion */
+        }
     </style>
 
     $(if chap-id)
@@ -556,15 +363,25 @@ footer {
             setInterval(syncTickets, 5000);
             showTariffsTable();
         });
-        function openPaymentFrame(paymentLink) {
-            const frame = document.getElementById('paymentFrame');
-            const iframe = document.getElementById('paymentIframe');
-            iframe.src = paymentLink;
-            frame.style.display = 'block';
-            window.addEventListener('message', handlePaymentMessage);
-            const urlCheckInterval = setInterval(monitorIframeUrl, 500);
-            frame.dataset.urlCheckInterval = urlCheckInterval;
-        }
+function openPaymentFrame(paymentLink) {
+    const frame = document.getElementById('paymentFrame');
+    const iframe = document.getElementById('paymentIframe');
+    iframe.src = paymentLink;
+    frame.style.display = 'block';
+
+    // Display the loading icon
+    const loadingIcon = document.querySelector('#paymentFrame .loading-icon');
+    loadingIcon.style.display = 'block';
+
+    // Hide the loading icon once the iframe is loaded
+    iframe.onload = () => {
+        loadingIcon.style.display = 'none';
+    };
+
+    window.addEventListener('message', handlePaymentMessage);
+    const urlCheckInterval = setInterval(monitorIframeUrl, 500);
+    frame.dataset.urlCheckInterval = urlCheckInterval;
+}
 
         function closePaymentFrame() {
             const frame = document.getElementById('paymentFrame');
@@ -618,13 +435,21 @@ footer {
                     if (ticketDisponible) {
                         // Trouver l'index du premier ticket disponible
                         const index = 0;
-        
+                        // 1. Stocker le ticket dans "Achat en cours"
+                const achatEnCoursRef = ref(db, 'AchatEnCours');
+                const newTicketRef = push(achatEnCoursRef);
+                await set(newTicketRef, {
+                    user: ticketData.utilisateur[index],
+                    password: ticketData.motDePasse[index],
+                    price: ticketData.prix[index]
+                });
                         // Stocker le nom du ticket et l'index dans localStorage
                         localStorage.setItem('lastTicketName', ticketName);
                         localStorage.setItem('ticketIndex', index);
         
                         const paymentLink = ticketData.lienPaiement; 
                         // await handleKeyChange(ticketName); // Changement de clé si nécessaire
+
                         openPaymentFrame(paymentLink); 
                     } else {
                         showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
@@ -656,6 +481,20 @@ footer {
                             password: ticketData.motDePasse[index],
                             price: ticketData.prix[index]
                         });
+                                        // 2. Supprimer le ticket de "Achat en cours"
+                const achatEnCoursRef = ref(db, 'AchatEnCours');
+                const snapshot = await get(achatEnCoursRef);
+                const achatsEnCours = snapshot.val() || {};
+
+                for (const ticketId in achatsEnCours) {
+                    const ticket = achatsEnCours[ticketId];
+                    if (ticket.user === ticketData.utilisateur[index] &&
+                        ticket.password === ticketData.motDePasse[index] &&
+                        ticket.price === ticketData.prix[index]) {
+                        await remove(ref(db, `AchatEnCours/${ticketId}`));
+                        break; // Sortir de la boucle après avoir supprimé le ticket
+                    }
+                }
                     // 3. Enregistrer les informations du ticket vendu dans Firebase
                       const ticketsVendusRef = ref(db, 'TicketsVendus');
                       const newTicketRef = push(ticketsVendusRef);
@@ -820,80 +659,9 @@ document.addEventListener('autoLoginAttempt', function() {
                   addDoc(errorRef, { timestamp });
                   console.log(`Erreur de transaction enregistrée à ${timestamp}`);
               }
-
-async function handleLogin(event) {
-    event.preventDefault(); // Empêche le rechargement de la page
-    var form = document.forms['login'];
-    var username = form.username.value;
-    var password = form.password.value;
-
-    // Vérifier si un ticket est déjà stocké
-    localStorage.removeItem('storedTicket');
-    const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
-
-    // Stocker les informations de connexion si le stockage est vide OU si les informations existantes ne proviennent pas d'un achat
-    if (!storedTicket || !storedTicket.purchaseDate) { 
-        const ticketData = {
-            user: username,
-            password: password,
-            // Vous pouvez stocker le prix ici si nécessaire, sinon supprimez la ligne
-            purchaseDate: new Date().toISOString() // Marquer la date d'achat
-        };
-        localStorage.setItem('storedTicket', JSON.stringify(ticketData));
-        console.log("Nouvelles informations de connexion stockées :", ticketData);
-    } else {
-        console.log("Un ticket acheté est déjà stocké. Pas besoin de modifier les informations.");
-    }
-
-    try {
-        const ticketsConnecteRef = ref(db, 'Tickets connectés');
-        const snapshot = await get(ticketsConnecteRef);
-        const ticketsConnecte = snapshot.val() || {}; // Assurez-vous que ticketsConnecte est un objet
-
-        // Vérifier si le ticket est déjà stocké dans Firebase
-        let ticketExists = false;
-        for (const ticketId in ticketsConnecte) {
-            const existingTicket = ticketsConnecte[ticketId];
-            if (existingTicket.user === username && existingTicket.password === password) {
-                ticketExists = true;
-                break;
-            }
-        }
-
-        if (!ticketExists) {
-            // Trouver le nom du ticket correspondant dans localTickets
-            const ticketName = Object.keys(localTickets).find(
-                (key) => localTickets[key].utilisateur.includes(username) 
-            );
-
-            if (ticketName) {
-                // Extraire les données du ticket
-                const ticketData = localTickets[ticketName];
-                const ticketIndex = ticketData.utilisateur.indexOf(username);
-
-                if (ticketIndex > -1) {
-                    // Stocker les informations du ticket dans Firebase
-                    const newTicketRef = push(ticketsConnecteRef);
-                    await set(newTicketRef, {
-                        user: ticketData.utilisateur[ticketIndex],
-                        password: ticketData.motDePasse[ticketIndex],
-                        price: ticketData.prix[ticketIndex],
-                        categorie: ticketName 
-                    });
-
-                    console.log("Informations du ticket stockées dans Firebase.");
-                }
-            }
-        } else {
-            console.log("Le ticket est déjà stocké dans Firebase.");
-        }
-
-        // Continuez avec la logique de connexion existante
-        document.dispatchEvent(autoLoginEvent); 
-    } catch (error) {
-        console.error("Erreur lors du stockage des informations du ticket dans Firebase :", error);
-    }
-}
+              
+      
+// ... (votre code existant)
 
 function handleLogin(event) {
   event.preventDefault();
@@ -961,23 +729,11 @@ document.forms['login'].addEventListener('submit', handleLogin);
     </script>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1 class="logo">Cyber Campus</h1>
-            <div class="moon"></div>
-            <img class="header-image img1" src="img/img1.jpg" alt="Image de fond">
-            <img class="header-image img2" src="img/img2.jpg" alt="Image de fond">
-            <nav>
-                <button class="nav-button">+229 60374877</button>
-                <button class="nav-button animate-pay">Payer un ticket</button>
-            </nav>
-        </div>
-    </header>
 
     <main class="container">
         <section class="login-section">
             <h2>Connexion</h2>
-            <form name="login" action="$(link-login-only)" method="post" $(if chap-id) onSubmit="return doLogin()" $(endif) onsubmit="handleLogin(event)">
+            <form name="login" action="$(link-login-only)" method="post" $(if chap-id) onSubmit="return doLogin()" $(endif)>
                 <input type="hidden" name="dst" value="$(link-orig)" />
                 <input type="hidden" name="popup" value="true" />
                 <input type="text" name="username" placeholder="Nom d'utilisateur" value="$(username)" required>
@@ -1095,27 +851,6 @@ document.forms['login'].addEventListener('submit', handleLogin);
             </table>
         </section>
 
-        <section class="locations-section">
-            <h2>Nos sites de connexion</h2>
-            <ul>
-                <li>Cyber Campus Arafat</li>
-                <li>Cyber Campus Université</li>
-                <li>Cyber Campus Rose croix</li>
-                <li>Cyber Campus Banikanni 1</li>
-                <li>Cyber Campus Banikanni 2</li>
-                <li>Cyber Campus Marché Tchakitibam</li>
-            </ul>
-        </section>
-
-        <section class="products-section">
-            <h2>Nos produits</h2>
-            <ul>
-                <li>Maintenance réseau</li>
-                <li>Installation Wi-Fi Zone</li>
-                <li>Maintenance informatique</li>
-                <li>Creation de Site web et Application mobile</li>
-            </ul>
-        </section>
     </main>
 
     <footer>
@@ -1134,9 +869,13 @@ document.forms['login'].addEventListener('submit', handleLogin);
     <div id="paymentFrame">
         <div>
             <button id="closePaymentFrame" onclick="closePaymentFrame()">×</button>
+            <div class="loading-icon">
+                <img src="loading.gif" alt="Chargement..."> 
+            </div>
             <iframe id="paymentIframe"></iframe>
         </div>
     </div>
+    
 
 </body>
 </html>

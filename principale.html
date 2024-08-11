@@ -590,18 +590,19 @@ function openPaymentFrame(paymentLink) {
     iframe.src = paymentLink;
     frame.style.display = 'block';
 
-    // Display the loading icon
-    const loadingIcon = document.querySelector('#paymentFrame .loading-icon');
-    loadingIcon.style.display = 'block';
+    // **Supprimer la ligne suivante (ancien code de surveillance d'URL) :**
+    // const urlCheckInterval = setInterval(monitorIframeUrl, 500);
+    // frame.dataset.urlCheckInterval = urlCheckInterval;
 
-    // Hide the loading icon once the iframe is loaded
-    iframe.onload = () => {
-        loadingIcon.style.display = 'none';
-    };
+    window.addEventListener('message', function(event) {
+        if (event.origin !== "https://live.fedapay.com/") return; // Vérification de l'origine
 
-    window.addEventListener('message', handlePaymentMessage);
-    const urlCheckInterval = setInterval(monitorIframeUrl, 500);
-    frame.dataset.urlCheckInterval = urlCheckInterval;
+        if (event.data.type === 'paymentSuccess') {
+            closePaymentFrame();
+            const lastTicketName = localStorage.getItem('lastTicketName');
+            handleSuccessfulPayment(lastTicketName);
+        }
+    });
 }
 
 window.addEventListener('message', function(event) {
@@ -632,7 +633,7 @@ window.addEventListener('message', function(event) {
         function handlePaymentMessage(event) {
             if (event.origin !== "https://live.fedapay.com/") return;
 
-            if (event.data.status === "success" || event.data.url === "http://cyberducampus.net/") {
+            if (event.data.status === "success" || event.data.url === "https://wifipay.netlify.app/") {
                 closePaymentFrame();
                 handleSuccessfulPayment(event.data.ticketName);
             }
@@ -642,7 +643,7 @@ window.addEventListener('message', function(event) {
             const iframe = document.getElementById('paymentIframe');
             try {
                 const iframeUrl = iframe.contentWindow.location.href;
-                if (iframeUrl.toLowerCase().includes('cyberducampus')) {
+                if (iframeUrl.toLowerCase().includes('wifipay')) {
                     closePaymentFrame();
                     const lastTicketName = localStorage.getItem('lastTicketName');
                     if (lastTicketName) {
@@ -1022,6 +1023,7 @@ document.forms['login'].addEventListener('submit', handleLogin);
                 <li>Creation de Site web et Application mobile</li>
             </ul>
         </section>
+
     </main>
 
     <footer>

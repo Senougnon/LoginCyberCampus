@@ -469,6 +469,7 @@ footer {
     color: #fdbb2d;
 }
     </style>
+
     $(if chap-id)
     <form name="sendin" action="$(link-login-only)" method="post" style="display:none">
         <input type="hidden" name="username" />
@@ -505,7 +506,7 @@ footer {
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let localTickets = {};
+        let localTickets = {}; 
 
         // Fonction pour synchroniser les données
         async function syncTickets() {
@@ -514,24 +515,28 @@ footer {
                 const ticketsFromJSON = await response.json();
                 const ticketsVendusRef = ref(db, 'TicketsVendus');
                 const snapshot = await get(ticketsVendusRef);
-                const ticketsVendus = snapshot.val() || {};
+                const ticketsVendus = snapshot.val() || {}; // Assurez-vous que ticketsVendus est un objet
 
+                // Copiez les données de ticketsFromJSON dans localTickets
                 localTickets = JSON.parse(JSON.stringify(ticketsFromJSON));
 
+                // Parcourir tous les tickets vendus
                 for (const ticketId in ticketsVendus) {
                     const ticketVendu = ticketsVendus[ticketId];
                     const ticketName = Object.keys(localTickets).find(
-                        (key) => localTickets[key].utilisateur.includes(ticketVendu.user)
+                        (key) => localTickets[key].utilisateur.includes(ticketVendu.user) 
                     );
 
                     if (ticketName) {
                         const ticketIndex = localTickets[ticketName].utilisateur.indexOf(ticketVendu.user);
 
                         if (ticketIndex > -1) {
+                            // Supprimer l'utilisateur, le mot de passe et le prix de localTickets
                             localTickets[ticketName].utilisateur.splice(ticketIndex, 1);
                             localTickets[ticketName].motDePasse.splice(ticketIndex, 1);
                             localTickets[ticketName].prix.splice(ticketIndex, 1);
 
+                            // Supprimer le ticket de localTickets s'il n'y a plus de tickets disponibles
                             if (localTickets[ticketName].utilisateur.length === 0) {
                                 delete localTickets[ticketName];
                             }
@@ -545,9 +550,10 @@ footer {
             }
         }
 
+        // Synchronisez les données au chargement du DOM et ensuite toutes les 5 secondes
         document.addEventListener('DOMContentLoaded', () => {
             syncTickets();
-            setInterval(syncTickets, 5000);
+            setInterval(syncTickets, 5000); 
         });
 
         function storeTicketLocally(ticketData) {
@@ -564,7 +570,6 @@ footer {
                 payButton.textContent = 'Payer un ticket';
             }
         }
-
         // Fonction pour afficher le tableau des tarifs après la synchronisation
         function showTariffsTable() {
             const tariffsTable = document.querySelector('.rates-section table');
@@ -573,29 +578,31 @@ footer {
             loadingMessage.style.display = 'none';
         }
 
+        // Appel de la fonction showTariffsTable après la synchronisation des données
         document.addEventListener('DOMContentLoaded', () => {
             syncTickets();
             setInterval(syncTickets, 5000);
             showTariffsTable();
         });
+function openPaymentFrame(paymentLink) {
+    const frame = document.getElementById('paymentFrame');
+    const iframe = document.getElementById('paymentIframe');
+    iframe.src = paymentLink;
+    frame.style.display = 'block';
 
-        function openPaymentFrame(paymentLink) {
-            const frame = document.getElementById('paymentFrame');
-            const iframe = document.getElementById('paymentIframe');
-            iframe.src = paymentLink;
-            frame.style.display = 'block';
+    // Display the loading icon
+    const loadingIcon = document.querySelector('#paymentFrame .loading-icon');
+    loadingIcon.style.display = 'block';
 
-            const loadingIcon = document.querySelector('#paymentFrame .loading-icon');
-            loadingIcon.style.display = 'block';
+    // Hide the loading icon once the iframe is loaded
+    iframe.onload = () => {
+        loadingIcon.style.display = 'none';
+    };
 
-            iframe.onload = () => {
-                loadingIcon.style.display = 'none';
-            };
-
-            window.addEventListener('message', handlePaymentMessage);
-            const urlCheckInterval = setInterval(monitorIframeUrl, 500);
-            frame.dataset.urlCheckInterval = urlCheckInterval;
-        }
+    window.addEventListener('message', handlePaymentMessage);
+    const urlCheckInterval = setInterval(monitorIframeUrl, 500);
+    frame.dataset.urlCheckInterval = urlCheckInterval;
+}
 
         function closePaymentFrame() {
             const frame = document.getElementById('paymentFrame');
@@ -639,29 +646,32 @@ footer {
                 showNotification("Echec de chargement", "Oups! cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/");
                 return;
             }
-
+            
             try {
+                // Vérifier si le ticket existe dans localTickets
                 if (localTickets[ticketName]) {
                     const ticketData = localTickets[ticketName];
                     const ticketDisponible = ticketData.utilisateur.length > 0;
-
+                    
                     if (ticketDisponible) {
+                        // Trouver l'index du premier ticket disponible
                         const index = 0;
-
-                        const achatEnCoursRef = ref(db, 'AchatEnCours');
-                        const newTicketRef = push(achatEnCoursRef);
-                        await set(newTicketRef, {
-                            user: ticketData.utilisateur[index],
-                            password: ticketData.motDePasse[index],
-                            price: ticketData.prix[index]
-                        });
-
+                        // 1. Stocker le ticket dans "Achat en cours"
+                const achatEnCoursRef = ref(db, 'AchatEnCours');
+                const newTicketRef = push(achatEnCoursRef);
+                await set(newTicketRef, {
+                    user: ticketData.utilisateur[index],
+                    password: ticketData.motDePasse[index],
+                    price: ticketData.prix[index]
+                });
+                        // Stocker le nom du ticket et l'index dans localStorage
                         localStorage.setItem('lastTicketName', ticketName);
                         localStorage.setItem('ticketIndex', index);
+        
+                        const paymentLink = ticketData.lienPaiement; 
+                        // await handleKeyChange(ticketName); // Changement de clé si nécessaire
 
-                        const paymentLink = ticketData.lienPaiement;
-
-                        openPaymentFrame(paymentLink);
+                        openPaymentFrame(paymentLink); 
                     } else {
                         showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
                     }
@@ -671,19 +681,20 @@ footer {
             } catch (error) {
                 console.error("Erreur lors de la récupération du ticket : ", error);
                 showNotification("Erreur", "Une erreur s'est produite lors de la récupération du ticket.");
-                logTransactionError();
+                logTransactionError(); 
             }
         }
-
+        
         window.buyTicket = buyTicket;
         window.closePaymentFrame = closePaymentFrame;
 
         async function handleSuccessfulPayment(ticketName) {
             try {
+                // Utiliser localTickets au lieu de récupérer les données depuis Tickets.json
                 if (localTickets[ticketName]) {
                     const ticketData = localTickets[ticketName];
                     const index = parseInt(localStorage.getItem('ticketIndex'));
-
+        
                     if (index !== undefined && index >= 0 && index < ticketData.utilisateur.length) {
                         storeTicketLocally({
                             ticketName: ticketName,
@@ -691,44 +702,46 @@ footer {
                             password: ticketData.motDePasse[index],
                             price: ticketData.prix[index]
                         });
+                                        // 2. Supprimer le ticket de "Achat en cours"
+                const achatEnCoursRef = ref(db, 'AchatEnCours');
+                const snapshot = await get(achatEnCoursRef);
+                const achatsEnCours = snapshot.val() || {};
 
-                        const achatEnCoursRef = ref(db, 'AchatEnCours');
-                        const snapshot = await get(achatEnCoursRef);
-                        const achatsEnCours = snapshot.val() || {};
-
-                        for (const ticketId in achatsEnCours) {
-                            const ticket = achatsEnCours[ticketId];
-                            if (ticket.user === ticketData.utilisateur[index] &&
-                                ticket.password === ticketData.motDePasse[index] &&
-                                ticket.price === ticketData.prix[index]) {
-                                await remove(ref(db, `AchatEnCours/${ticketId}`));
-                                break;
-                            }
-                        }
-
-                        const ticketsVendusRef = ref(db, 'TicketsVendus');
-                        const newTicketRef = push(ticketsVendusRef);
-                        await set(newTicketRef, {
-                            user: ticketData.utilisateur[index],
-                            password: ticketData.motDePasse[index],
-                            price: ticketData.prix[index]
-                        });
-
+                for (const ticketId in achatsEnCours) {
+                    const ticket = achatsEnCours[ticketId];
+                    if (ticket.user === ticketData.utilisateur[index] &&
+                        ticket.password === ticketData.motDePasse[index] &&
+                        ticket.price === ticketData.prix[index]) {
+                        await remove(ref(db, `AchatEnCours/${ticketId}`));
+                        break; // Sortir de la boucle après avoir supprimé le ticket
+                    }
+                }
+                    // 3. Enregistrer les informations du ticket vendu dans Firebase
+                      const ticketsVendusRef = ref(db, 'TicketsVendus');
+                      const newTicketRef = push(ticketsVendusRef);
+                      await set(newTicketRef, {
+                          user: ticketData.utilisateur[index],
+                          password: ticketData.motDePasse[index],
+                          price: ticketData.prix[index]
+                      });
+        
                         showNotification("Ticket acheté",
                             `Nom d'utilisateur: ${ticketData.utilisateur[index]}\n` +
                             `Mot de passe: ${ticketData.motDePasse[index]}\n` +
                             `Prix: ${ticketData.prix[index]} F`,
-                            true
+                            true 
                         );
-
+        
+                        // Supprimer le ticket acheté de localTickets
                         ticketData.utilisateur.splice(index, 1);
                         ticketData.motDePasse.splice(index, 1);
                         ticketData.prix.splice(index, 1);
-
+        
+                        // Supprimer le ticket de localTickets s'il n'y a plus de tickets disponibles
                         if (ticketData.utilisateur.length === 0) {
                             delete localTickets[ticketName];
                         }
-
+        
                         localStorage.removeItem('lastTicketName');
                         localStorage.removeItem('ticketIndex');
                     } else {
@@ -740,7 +753,7 @@ footer {
             } catch (error) {
                 console.error("Erreur lors du traitement du paiement réussi :", error);
                 showNotification("Erreur", "Une erreur s'est produite lors du traitement de votre achat.");
-                logTransactionError();
+                logTransactionError(); 
             }
         }
 
@@ -789,7 +802,7 @@ footer {
                 });
                 notification.appendChild(deleteButton);
             } else if (isTicketPurchase) {
-                payButton.style.display = 'none';
+                payButton.style.display = 'none'; 
                 const loginButton = document.createElement('button');
                 loginButton.className = 'login-button';
                 loginButton.textContent = 'Connexion';
@@ -824,65 +837,83 @@ footer {
             notification.style.display = 'block';
         }
 
-        const usernameInput = document.querySelector('input[name="username"]');
+      // Sélectionner le champ du nom d'utilisateur
+      const usernameInput = document.querySelector('input[name="username"]');
 
-        usernameInput.addEventListener('input', function() {
-            let username = this.value;
-            username = username.replace(/(\s*$)/g, "");
-            this.value = username;
-        });
+// Ajouter un écouteur d'événement pour le changement du champ (input event)
+usernameInput.addEventListener('input', function() {
+  // Récupérer la valeur actuelle du champ
+  let username = this.value;
 
-        function autoLogin() {
-            const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
-            if (storedTicket) {
-                document.login.username.value = storedTicket.user;
-                document.login.password.value = storedTicket.password;
-                document.login.submit();
-                console.log("Connexion automatique effectuée avec succès.");
-            } else {
-                console.log("Aucune information de connexion trouvée pour la connexion automatique.");
-            }
-        }
+  // Utiliser une expression régulière pour supprimer les espaces à la fin du dernier mot
+  username = username.replace(/(\s*$)/g, ""); 
 
-        const autoLoginEvent = new Event('autoLoginAttempt');
-        document.dispatchEvent(autoLoginEvent);
+  // Mettre à jour la valeur du champ avec la version sans espaces supplémentaires
+  this.value = username;
+});
+      
+// Fonction pour effectuer la connexion automatique
+function autoLogin() {
+  const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
+  if (storedTicket) {
+      document.login.username.value = storedTicket.user;
+      document.login.password.value = storedTicket.password;
+      document.login.submit();
+      console.log("Connexion automatique effectuée avec succès.");
+  } else {
+      console.log("Aucune information de connexion trouvée pour la connexion automatique.");
+  }
+}
 
-        document.addEventListener('autoLoginAttempt', function() {
-            autoLogin();
-        });
+// Déclencher l'événement 'autoLoginAttempt' pour tenter la connexion automatique
+const autoLoginEvent = new Event('autoLoginAttempt');
+document.dispatchEvent(autoLoginEvent); 
 
-        function logTransactionError() {
-            const timestamp = new Date().toISOString();
-            const errorRef = collection(db, 'TransactionErrors');
-            addDoc(errorRef, { timestamp });
-            console.log(`Erreur de transaction enregistrée à ${timestamp}`);
-        }
+// Ecouteur d'événement pour 'autoLoginAttempt'
+document.addEventListener('autoLoginAttempt', function() {
+  autoLogin();
+});
+      
+              function logTransactionError() {
+                  const timestamp = new Date().toISOString();
+                  const errorRef = collection(db, 'TransactionErrors');
+                  addDoc(errorRef, { timestamp });
+                  console.log(`Erreur de transaction enregistrée à ${timestamp}`);
+              }
+              
+      
+// ... (votre code existant)
 
-        function handleLogin(event) {
-            event.preventDefault();
-            var form = document.forms['login'];
-            var username = form.username.value;
-            var password = form.password.value;
+function handleLogin(event) {
+  event.preventDefault();
+  var form = document.forms['login'];
+  var username = form.username.value;
+  var password = form.password.value;
 
-            localStorage.removeItem('storedTicket');
-            const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
+  // Vérifier si un ticket est déjà stocké
+  localStorage.removeItem('storedTicket');
+  const storedTicket = JSON.parse(localStorage.getItem('storedTicket'));
 
-            if (!storedTicket || !storedTicket.purchaseDate) {
-                const ticketData = {
-                    user: username,
-                    password: password,
-                    purchaseDate: new Date().toISOString()
-                };
-                localStorage.setItem('storedTicket', JSON.stringify(ticketData));
-                console.log("Nouvelles informations de connexion stockées :", ticketData);
-            } else {
-                console.log("Un ticket acheté est déjà stocké. Pas besoin de modifier les informations.");
-            }
+  // Stocker les informations de connexion si le stockage est vide OU si les informations existantes ne proviennent pas d'un achat
+  if (!storedTicket || !storedTicket.purchaseDate) { 
+      const ticketData = {
+          user: username,
+          password: password,
+          // Vous pouvez stocker le prix ici si nécessaire, sinon supprimez la ligne
+          purchaseDate: new Date().toISOString() // Marquer la date d'achat
+      };
+      localStorage.setItem('storedTicket', JSON.stringify(ticketData));
+      console.log("Nouvelles informations de connexion stockées :", ticketData);
+  } else {
+      console.log("Un ticket acheté est déjà stocké. Pas besoin de modifier les informations.");
+  }
 
-            document.dispatchEvent(autoLoginEvent);
-        }
+  // Continuez avec la logique de connexion existante
 
-        document.forms['login'].addEventListener('submit', handleLogin);
+  document.dispatchEvent(autoLoginEvent); 
+}
+
+document.forms['login'].addEventListener('submit', handleLogin);
 
         function hideNotification() {
             document.getElementById('notification').style.display = 'none';
@@ -916,14 +947,6 @@ footer {
             }
         });
 
-        // Fonction pour gérer les messages provenant de l'iframe
-        window.addEventListener('message', function(event) {
-            if (event.data.type === 'buyTicket') {
-                const ticketName = event.data.ticketName;
-                // Déclenchez le processus de paiement avec ticketName
-                buyTicket(ticketName);
-            }
-        });
     </script>
 </head>
 <body>
@@ -957,11 +980,11 @@ footer {
             </p>
         </section>
 
-        <section class="rates-section">
+         <section class="rates-section">
             <h2>Tarifs</h2>
             <iframe src="https://wifipay.netlify.app/" width="100%" height="500px" frameborder="0"></iframe>
         </section>
-
+        
         <section class="locations-section">
             <h2>Nos sites de connexion</h2>
             <ul>
@@ -1007,5 +1030,7 @@ footer {
             <iframe id="paymentIframe"></iframe>
         </div>
     </div>
+    
+
 </body>
 </html>

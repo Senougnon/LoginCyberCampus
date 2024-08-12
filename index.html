@@ -415,7 +415,7 @@ function openPaymentFrame(paymentLink) {
     // frame.dataset.urlCheckInterval = urlCheckInterval;
 
     window.addEventListener('message', function(event) {
-        if (event.origin !== "https://live.fedapay.com/") return; // Vérification de l'origine
+        if (event.origin !== "https://fedapay.netlify.app/") return; // Vérification de l'origine
 
         if (event.data.type === 'paymentSuccess') {
             closePaymentFrame();
@@ -435,7 +435,7 @@ function openPaymentFrame(paymentLink) {
         }
 
         function handlePaymentMessage(event) {
-            if (event.origin !== "https://live.fedapay.com/") return;
+            if (event.origin !== "https://fedapay.netlify.app/") return;
 
             if (event.data.status === "success" || event.data.url === "https://wifipay.netlify.app/") {
                 closePaymentFrame();

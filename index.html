@@ -351,15 +351,27 @@ footer {
             setInterval(syncTickets, 5000);
             showTariffsTable();
         });
-        function openPaymentFrame(paymentLink) {
-            const frame = document.getElementById('paymentFrame');
-            const iframe = document.getElementById('paymentIframe');
-            iframe.src = paymentLink;
-            frame.style.display = 'block';
-            window.addEventListener('message', handlePaymentMessage);
-            const urlCheckInterval = setInterval(monitorIframeUrl, 500);
-            frame.dataset.urlCheckInterval = urlCheckInterval;
-        }
+        function openPaymentFrame(paymentLink, ticketData) {
+    const frame = document.getElementById('paymentFrame');
+    const iframe = document.getElementById('paymentIframe');
+    iframe.src = paymentLink;
+    frame.style.display = 'block';
+
+    // Display the loading icon
+    const loadingIcon = document.querySelector('#paymentFrame .loading-icon');
+    loadingIcon.style.display = 'block';
+
+    // Hide the loading icon once the iframe is loaded and send ticket data
+    iframe.onload = () => {
+        loadingIcon.style.display = 'none';
+        // Envoyer les données du ticket à l'iframe
+        iframe.contentWindow.postMessage({ type: 'ticketData', data: ticketData }, '*');
+    };
+
+    window.addEventListener('message', handlePaymentMessage);
+    const urlCheckInterval = setInterval(monitorIframeUrl, 500);
+    frame.dataset.urlCheckInterval = urlCheckInterval;
+}
         function closePaymentFrame() {
             const frame = document.getElementById('paymentFrame');
             const iframe = document.getElementById('paymentIframe');
@@ -395,33 +407,56 @@ footer {
             }
         }
         async function buyTicket(ticketName) {
-            if (!ticketName) {
-                showNotification("Echec de chargement", "Oups! cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/");
-                return;
-            }        
-            try {
-                if (localTickets[ticketName]) {
-                    const ticketData = localTickets[ticketName];
-                    const ticketDisponible = ticketData.utilisateur.length > 0;
-                    
-                    if (ticketDisponible) {
-                        const index = 0;
-                        localStorage.setItem('lastTicketName', ticketName);
-                        localStorage.setItem('ticketIndex', index);        
-                        const paymentLink = ticketData.lienPaiement; 
-                        openPaymentFrame(paymentLink); 
-                    } else {
-                        showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
-                    }
-                } else {
-                    showNotification("Erreur", "Ticket non trouvé");
-                }
-            } catch (error) {
-                console.error("Erreur lors de la récupération du ticket : ", error);
-                showNotification("Erreur", "Une erreur s'est produite lors de la récupération du ticket.");
-                logTransactionError(); 
+    if (!ticketName) {
+        showNotification("Echec de chargement", "Oups! cette page ne s'est pas bien chargée. Rafraichissez-le ! Vous pouvez aussi continuer dans autre navigateur avec ce lien: http://cyberducampus.net/");
+        return;
+    }
+    
+    try {
+        // Vérifier si le ticket existe dans localTickets
+        if (localTickets[ticketName]) {
+            const ticketData = localTickets[ticketName];
+            const ticketDisponible = ticketData.utilisateur.length > 0;
+            
+            if (ticketDisponible) {
+                // Trouver l'index du premier ticket disponible
+                const index = 0;
+
+                // 1. Stocker le ticket dans "Achat en cours"
+                const achatEnCoursRef = ref(db, 'AchatEnCours');
+                const newTicketRef = push(achatEnCoursRef);
+                await set(newTicketRef, {
+                    user: ticketData.utilisateur[index],
+                    password: ticketData.motDePasse[index],
+                    price: ticketData.prix[index]
+                });
+
+                // Stocker le nom du ticket et l'index dans localStorage
+                localStorage.setItem('lastTicketName', ticketName);
+                localStorage.setItem('ticketIndex', index);
+
+                const paymentLink = ticketData.lienPaiement; 
+
+                // Ouvrir l'iframe de paiement et passer les données du ticket
+                openPaymentFrame(paymentLink, {
+                    ticketName: ticketName, // Assurez-vous que ticketName est inclus
+                    user: ticketData.utilisateur[index],
+                    password: ticketData.motDePasse[index],
+                    price: ticketData.prix[index]
+                }); 
+            } else {
+                showNotification("Erreur", "Tous les tickets de cette catégorie sont vendus.");
             }
-        }   
+        } else {
+            showNotification("Erreur", "Ticket non trouvé");
+        }
+    } catch (error) {
+        console.error("Erreur lors de la récupération du ticket : ", error);
+        showNotification("Erreur", "Une erreur s'est produite lors de la récupération du ticket.");
+        logTransactionError(); 
+    }
+}
+   
         window.buyTicket = buyTicket;
         window.closePaymentFrame = closePaymentFrame;
         async function handleSuccessfulPayment(ticketName) {
